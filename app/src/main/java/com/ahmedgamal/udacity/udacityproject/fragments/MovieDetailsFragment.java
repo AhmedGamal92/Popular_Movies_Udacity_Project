@@ -11,7 +11,12 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v7.widget.ShareActionProvider;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -35,6 +40,7 @@ public class MovieDetailsFragment extends Fragment implements LoaderManager.Load
     private static final int MOVIE_DETAILS_LOADER = 1;
     private static final int MOVIE_Trailers_LOADER = 2;
     private static final int MOVIE_Reviews_LOADER = 3;
+    private static final String SHARE_HASHTAG = " #Popular_Movies";
 
     private Uri mUri;
     private ImageView mPosterIV;
@@ -48,6 +54,13 @@ public class MovieDetailsFragment extends Fragment implements LoaderManager.Load
     private SimpleCursorAdapter mTrailersCursorAdapter;
     private SimpleCursorAdapter mReviewsCursorAdapter;
     private String mMovieId;
+    private ShareActionProvider mShareActionProvider;
+
+    private String mFirstTrailer;
+
+    public MovieDetailsFragment() {
+        setHasOptionsMenu(true);
+    }
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -157,6 +170,13 @@ public class MovieDetailsFragment extends Fragment implements LoaderManager.Load
                     fillMovieDetails(data);
                 break;
             case MOVIE_Trailers_LOADER:
+                if (data.moveToFirst()) {
+                    mFirstTrailer = String.format("%s : %s", data.getString(data.getColumnIndex(MoviesContract.MoviesTrailersEntry.COLUMN_TRAILER_TITLE)),
+                            data.getString(data.getColumnIndex(MoviesContract.MoviesTrailersEntry.COLUMN_TRAILER_URL)));
+                    if (mShareActionProvider != null)
+                        mShareActionProvider.setShareIntent(createShareTrailerIntent());
+                }
+
                 mTrailersCursorAdapter.swapCursor(data);
                 Utility.setListViewHeightBasedOnChildren(mTrailersList);
                 break;
@@ -205,5 +225,26 @@ public class MovieDetailsFragment extends Fragment implements LoaderManager.Load
                 mReviewsCursorAdapter.swapCursor(null);
                 break;
         }
+    }
+
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.movie_details_fragment, menu);
+        MenuItem menuItem = menu.findItem(R.id.action_share);
+
+        mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(menuItem);
+
+        if (mFirstTrailer != null) {
+            mShareActionProvider.setShareIntent(createShareTrailerIntent());
+        }
+    }
+
+    private Intent createShareTrailerIntent() {
+        Intent shareIntent = new Intent(Intent.ACTION_SEND);
+        shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+        shareIntent.setType("text/plain");
+        shareIntent.putExtra(Intent.EXTRA_TEXT, mFirstTrailer + SHARE_HASHTAG);
+        return shareIntent;
     }
 }
