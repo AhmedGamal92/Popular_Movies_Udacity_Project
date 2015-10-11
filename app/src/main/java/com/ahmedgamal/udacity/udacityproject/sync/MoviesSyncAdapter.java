@@ -53,6 +53,7 @@ public class MoviesSyncAdapter extends AbstractThreadedSyncAdapter {
     private void getDataFromMoviesApi() {
         final String MOVIES_URL = "http://api.themoviedb.org/3/discover/movie?";
         final String SORT_PARAM = "sort_by";
+        final String VOTE_COUNT_GTE_PARAM = "vote_count.gte";
         final String SORT_BY_MOST_POPULAR = "popularity.desc";
         final String SORT_BY_TOP_RATED = "vote_average.desc";
 
@@ -65,6 +66,7 @@ public class MoviesSyncAdapter extends AbstractThreadedSyncAdapter {
 
         Uri builtUri = Uri.parse(MOVIES_URL).buildUpon()
                 .appendQueryParameter(SORT_PARAM, sortByQuery)
+                .appendQueryParameter(VOTE_COUNT_GTE_PARAM, Integer.toString(100)) // Movies with this low number of votes doesn't deserve to be here :)
                 .appendQueryParameter(API_KEY_PARAM, API_KEY)
                 .build();
 
@@ -129,7 +131,6 @@ public class MoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         final String JSON_KEY_POSTER = "poster_path";
         final String JSON_KEY_RATING = "vote_average";
         final String JSON_KEY_POPULARITY = "popularity";
-        final String JSON_KEY_VOTE_COUNT = "vote_count";
 
         JSONObject object = new JSONObject(response);
         JSONArray resultsArray = object.getJSONArray(JSON_KEY_RESULTS);
@@ -140,9 +141,6 @@ public class MoviesSyncAdapter extends AbstractThreadedSyncAdapter {
         for (int i = 0; i < length; i++) {
             try {
                 JSONObject movieObject = resultsArray.getJSONObject(i);
-                int votesCount = movieObject.getInt(JSON_KEY_VOTE_COUNT);
-                if (votesCount < 10) // Movies with this low number of votes doesn't deserve to be here :)
-                    continue;
                 String id = movieObject.getString(JSON_KEY_ID);
                 String title = movieObject.getString(JSON_KEY_TITLE);
                 String overview = movieObject.getString(JSON_KEY_OVERVIEW);
